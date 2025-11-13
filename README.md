@@ -199,4 +199,73 @@ kubectl get pods -n kube-system
 
 We can now deploy any sample workload or clone our project repo and start applying Kubernetes manifests:
 
+```
+kubectl apply -f <your-app-deployment>.yaml
+kubectl get pods -A
+```
+
+<img width="765" height="541" alt="Screenshot 2025-11-13 at 22 59 13" src="https://github.com/user-attachments/assets/89097e8b-0a34-4069-9e68-325467a16cdc" />
+
+
+<img width="808" height="309" alt="Screenshot 2025-11-13 at 23 00 01" src="https://github.com/user-attachments/assets/d627d0d2-6adf-4c1a-abd6-091f708c8ca3" />
+
+
+## Resetting the Cluster (Cleanup Script)
+
+If you ever need to rebuild or reset your cluster, you can use a simple script called cleanup.sh.
+It completely removes all Kubernetes components, data, and configuration files — making your node ready for a fresh setup.
+
+Create cleanup.sh
+
+```
+#!/bin/bash
+# cleanup.sh — Reset and clean up a kubeadm Kubernetes node
+# Works for both master and worker nodes
+
+set -e
+
+echo "Cleaning up Kubernetes cluster components..."
+
+# Step 1: Reset kubeadm configuration
+sudo kubeadm reset -f
+
+# Step 2: Stop kubelet and containerd
+echo "Stopping kubelet and containerd..."
+sudo systemctl stop kubelet || true
+sudo systemctl stop containerd || true
+
+# Step 3: Remove Kubernetes and CNI directories
+echo "🗑️  Removing Kubernetes and CNI directories..."
+sudo rm -rf /etc/kubernetes/
+sudo rm -rf /var/lib/kubelet/
+sudo rm -rf /var/lib/etcd/
+sudo rm -rf /etc/cni/
+sudo rm -rf /var/lib/cni/
+sudo rm -rf /opt/cni/
+
+# Step 4: Remove kube config for the current user
+echo "Removing kube config..."
+rm -rf $HOME/.kube
+
+# Step 5: Restart containerd and kubelet
+echo "Restarting containerd and kubelet..."
+sudo systemctl restart containerd || true
+sudo systemctl restart kubelet || true
+
+echo "Cleanup completed successfully!"
+echo "You can now reinitialize the master node with:"
+echo "  sudo kubeadm init --apiserver-advertise-address=<your-master-ip> --pod-network-cidr=10.244.0.0/16"
+echo ""
+echo "Or rejoin the worker node using your previous kubeadm join command."
+```
+
+Run the cleanup
+
+```
+chmod +x cleanup.sh
+./cleanup.sh
+```
+<img width="845" height="480" alt="Screenshot 2025-11-13 at 23 07 44" src="https://github.com/user-attachments/assets/4646d06d-f044-47ad-8180-eb70f179c8f9" />
+
+
 
